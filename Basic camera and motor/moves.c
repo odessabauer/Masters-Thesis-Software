@@ -118,7 +118,7 @@ int main(int argc, char *argv[]) {
     printf("Transmitting Waveform\n");
     wave_chain(pi, buff, WAVES * 14);
     
-    //while (wave_tx_busy(pi)) usleep(100000); //don't want it to sleep since then delays taking photo
+    while (wave_tx_busy(pi)) usleep(100000); //don't want it to sleep since then delays taking photo
 
     printf("Waveform Transmitted\n");
 

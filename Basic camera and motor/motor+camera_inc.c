@@ -13,7 +13,7 @@ struct speed {
 };
 
 void add_string(char* dest, char* src,int start, int length);
-
+/** 
 void alert(int pi, unsigned user_gpio, unsigned level, uint32_t tick)
 {
    static uint32_t lastTick=0;
@@ -33,7 +33,7 @@ void alert(int pi, unsigned user_gpio, unsigned level, uint32_t tick)
   
 
    lastTick = tick;
-}
+} */
 
 int main(int argc, char *argv[]) {
     int pi, wid[WAVES], l_steps[WAVES], reverse = 0; //declaring variables
@@ -53,9 +53,9 @@ int main(int argc, char *argv[]) {
     int t_steps = 500;
     int pin_motor = 17;
 
-    int pin_hall = 12;
+    /**int pin_hall = 12;
     set_mode(pi, pin_hall, PI_INPUT); //setting signal pin as input
-    set_pull_up_down(pi, pin_hall, PI_PUD_UP);
+    set_pull_up_down(pi, pin_hall, PI_PUD_UP);*/
 
 
     //getting input arguments
@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
     //printf("\n");
     }
 
-    callback(pi, pin_hall, FALLING_EDGE, alert);
+    //callback(pi, pin_hall, FALLING_EDGE, alert);
 
     for(int i = 0; i<  WAVES * 14; i++){
         printf("%d ",buff[i]);
@@ -143,7 +143,13 @@ int main(int argc, char *argv[]) {
     printf("Transmitting Waveform\n");
     wave_chain(pi, buff, WAVES * 14);
     
-    while (wave_tx_busy(pi)) usleep(100000); 
+    //while (wave_tx_busy(pi)) usleep(100000); 
+
+    char photo_command[50];
+    strcpy(photo_command, "gphoto2 --capture-image");
+    while(wave_tx_busy(pi)) {
+        system(photo_command);
+    }
 
 
     printf("Waveform Transmitted\n");

@@ -14,29 +14,10 @@ struct speed {
 
 void add_string(char* dest, char* src,int start, int length);
 
-void alert(int pi, unsigned user_gpio, unsigned level, uint32_t tick)
-{
-   static uint32_t lastTick=0;
-   char photo_command[50];
-   strcpy(photo_command, "gphoto2 --capture-image");
-
-   if (lastTick) {
-    printf("%d %.2f\n", level, (float)(tick-lastTick)/1000000.0);
-    //take photo if fall in hall sensor detected
-    system(photo_command); 
-   }
-   else {
-    printf("%d 0.00\n", level); 
-    //take photo if fall in hall sensor detected
-    system(photo_command); 
-   }         
-  
-
-   lastTick = tick;
-}
 
 int main(int argc, char *argv[]) {
-    int pi, wid[WAVES], l_steps[WAVES], reverse = 0; //declaring variables
+    int pi, wid[WAVES], l_steps[WAVES], reverse = 0;
+    float tick1, tick2; //declaring variables
     pi = pigpio_start(0, 0); //connecting to the pigpio daemon
     if (pi < 0) {
         return -1; //closing program if failure to connect
@@ -51,18 +32,14 @@ int main(int argc, char *argv[]) {
     };
 
     int t_steps = 500;
-    int pin_motor = 17;
-
-    int pin_hall = 12;
-    set_mode(pi, pin_hall, PI_INPUT); //setting signal pin as input
-    set_pull_up_down(pi, pin_hall, PI_PUD_UP);
+    int pin = 16;
 
 
     //getting input arguments
     if (argc >= 5) {
         for (int i = 1; i < (argc - 1); i++) { //skip first entry as it is the program name
             if (!strcmp(argv[i], "-p")) {
-                pin_motor = atoi(argv[i + 1]);
+                pin = atoi(argv[i + 1]);
             }
             if (!strcmp(argv[i], "-s")) {
                 t_steps = atoi(argv[i + 1]);
@@ -75,7 +52,7 @@ int main(int argc, char *argv[]) {
         reverse = 1;
     }
     
-    set_mode(pi, pin_motor, PI_OUTPUT); //setting signal pin as output
+    set_mode(pi, pin, PI_OUTPUT); //setting signal pin as output
     set_mode(pi, DIR, PI_OUTPUT); //setting direction pin as output
     gpio_write(pi,DIR,reverse); //writing direction value 
 
@@ -87,8 +64,8 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i<WAVES; i++) {
         //generating waveforms for each frequency
         wave_add_generic(pi, 2, (gpioPulse_t[])
-                {{1 << pin_motor, 0,        250000 / speeds[i].frequency}, //convert given frequency to microseconds
-                 {0,        1 << pin_motor, 250000 / speeds[i].frequency}});
+                {{1 << pin, 0,        250000 / speeds[i].frequency}, //convert given frequency to microseconds
+                 {0,        1 << pin, 250000 / speeds[i].frequency}});
         wid[i] = wave_create(pi); // generate one pulse at the given frequency
         //printf("%d\n",500000 / speeds[i].frequency);
 
@@ -133,7 +110,6 @@ int main(int argc, char *argv[]) {
     //printf("\n");
     }
 
-    callback(pi, pin_hall, FALLING_EDGE, alert);
 
     for(int i = 0; i<  WAVES * 14; i++){
         printf("%d ",buff[i]);
@@ -141,10 +117,12 @@ int main(int argc, char *argv[]) {
     printf("\n");
     
     printf("Transmitting Waveform\n");
+    tick1 = get_current_tick(pi);
     wave_chain(pi, buff, WAVES * 14);
     
-    while (wave_tx_busy(pi)) usleep(100000); 
-
+    while (wave_tx_busy(pi)) usleep(100000);
+    tick2 = get_current_tick(pi);
+    printf("Time for motor: %.2f\n", (float)(tick2 - tick1)/1000000.0);
 
     printf("Waveform Transmitted\n");
 
@@ -167,5 +145,3 @@ void add_string ( char* dest, char* src,int start, int length){
         *(dest+start+i)=*(src+i);
     }
 }
-
-
